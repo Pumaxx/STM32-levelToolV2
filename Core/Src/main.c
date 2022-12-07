@@ -6,13 +6,12 @@
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; Copyright (c) 2022 STMicroelectronics.
-  * All rights reserved.</center></h2>
+  * Copyright (c) 2022 STMicroelectronics.
+  * All rights reserved.
   *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the
-  * License. You may obtain a copy of the License at:
-  *                        opensource.org/licenses/BSD-3-Clause
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
   */
@@ -22,11 +21,12 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-	#include <stdlib.h>
-	#include "../../../Drivers/BSP/STM32F411E-Discovery/stm32f411e_discovery.h"
-	#include "../../../Drivers/BSP/STM32F411E-Discovery/stm32f411e_discovery_accelerometer.h"
-	#include "ssd1306.h"
-	#include "fonts.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include "../../../Drivers/BSP/STM32F411E-Discovery/stm32f411e_discovery.h"
+#include "../../../Drivers/BSP/STM32F411E-Discovery/stm32f411e_discovery_accelerometer.h"
+#include "ssd1306.h"
+#include "fonts.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -57,8 +57,8 @@ SPI_HandleTypeDef hspi1;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
-static void MX_SPI1_Init(void);
 static void MX_I2C2_Init(void);
+static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -91,88 +91,97 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-  	  BSP_ACCELERO_Init();
-  	  ssd1306_Init(&hi2c2);
+  BSP_ACCELERO_Init();
+  ssd1306_Init(&hi2c2);
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_I2C1_Init();
-  MX_SPI1_Init();
   MX_I2C2_Init();
+  MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-		int16_t axis[3] = {0};
-		int16_t xAxis, yAxis = 0x00;
+  int16_t axis[3] = {0};
+  int16_t xAxis, yAxis = 0x00;
 
-		int16_t ThresholdHigh = 1000;
-		int16_t ThresholdLow = -1000;
-		uint32_t delayMs = 10;
+  int16_t ThresholdHigh = 1000;
+  int16_t ThresholdLow = -1000;
+  uint32_t delayMs = 10;
 
-		void turnOnLed(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
-		{
-			HAL_GPIO_WritePin(GPIOx, GPIO_Pin, GPIO_PIN_SET);
-			HAL_Delay(delayMs);
-		}
+  char xText[16];
+  char yText[16];
 
-		void turnOfLEDS()
-		{
-			HAL_GPIO_WritePin(LED_Green_GPIO_Port, LED_Green_Pin, GPIO_PIN_RESET);
-			HAL_GPIO_WritePin(LED_Red_GPIO_Port, LED_Red_Pin, GPIO_PIN_RESET);
-			HAL_GPIO_WritePin(LED_Orange_GPIO_Port, LED_Orange_Pin, GPIO_PIN_RESET);
-			HAL_GPIO_WritePin(LED_Blue_GPIO_Port, LED_Blue_Pin, GPIO_PIN_RESET);
-		}
+  int16_t xDisplay, xOffset = 1, xScale = 185;
+  int16_t yDisplay, yOffset = 2, yScale = 180;
+
+  void turnOnLed(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
+  {
+	  HAL_GPIO_WritePin(GPIOx, GPIO_Pin, GPIO_PIN_SET);
+	  HAL_Delay(delayMs);
+  }
+
+  void turnOfLEDS()
+  {
+	  HAL_GPIO_WritePin(LED_Green_GPIO_Port, LED_Green_Pin, GPIO_PIN_RESET);
+	  HAL_GPIO_WritePin(LED_Red_GPIO_Port, LED_Red_Pin, GPIO_PIN_RESET);
+	  HAL_GPIO_WritePin(LED_Orange_GPIO_Port, LED_Orange_Pin, GPIO_PIN_RESET);
+	  HAL_GPIO_WritePin(LED_Blue_GPIO_Port, LED_Blue_Pin, GPIO_PIN_RESET);
+  }
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
-  {
-    /* USER CODE END WHILE */
+    {
+      /* USER CODE END WHILE */
 
-    /* USER CODE BEGIN 3 */
+      /* USER CODE BEGIN 3 */
 
 
-		BSP_ACCELERO_GetXYZ(axis);
+  		BSP_ACCELERO_GetXYZ(axis);
 
-		ssd1306_Fill(Black);
+  		ssd1306_Fill(Black);
 
-		xAxis = axis[0];
-		yAxis = axis[1];
+  		xDisplay = axis[0] / xScale - xOffset;
+  		yDisplay = axis[1] / yScale - yOffset;
 
-		if(abs(xAxis) > abs(yAxis))
-		{
-			if(xAxis > ThresholdHigh)
-				turnOnLed(LED_Green_GPIO_Port, LED_Green_Pin);
+  		xAxis = axis[0];
+  		yAxis = axis[1];
 
-			else if(xAxis < ThresholdLow)
-				turnOnLed(LED_Red_GPIO_Port, LED_Red_Pin);
+  		if(abs(xAxis) > abs(yAxis))
+  		{
+  			if(xAxis > ThresholdHigh)
+  				turnOnLed(LED_Green_GPIO_Port, LED_Green_Pin);
 
-			else { HAL_Delay(delayMs); }
-		}
+  			else if(xAxis < ThresholdLow)
+  				turnOnLed(LED_Red_GPIO_Port, LED_Red_Pin);
 
-		else
-		{
-			if(yAxis  > ThresholdHigh)
-				 turnOnLed(LED_Orange_GPIO_Port, LED_Orange_Pin);
+  			else { HAL_Delay(delayMs); }
+  		}
 
-			else if(yAxis < ThresholdLow)
-				turnOnLed(LED_Blue_GPIO_Port, LED_Blue_Pin);
+  		else
+  		{
+  			if(yAxis  > ThresholdHigh)
+  				 turnOnLed(LED_Orange_GPIO_Port, LED_Orange_Pin);
 
-			else { HAL_Delay(delayMs); }
-		}
+  			else if(yAxis < ThresholdLow)
+  				turnOnLed(LED_Blue_GPIO_Port, LED_Blue_Pin);
 
-		ssd1306_SetCursor(10, 10);
-		//		sprintf(xText, "x: %.2f", xAxisDisplay);
-		ssd1306_WriteString("Test1", Font_11x18, White);
+  			else { HAL_Delay(delayMs); }
+  		}
 
-		ssd1306_SetCursor(10, 40);
-		//		sprintf(yText, "y: %.2f", Display);
-		ssd1306_WriteString("Test2", Font_11x18, White);
+  		ssd1306_SetCursor(10, 10);
+  		sprintf(xText, "x: %d", xDisplay);
+  		ssd1306_WriteString(xText, Font_11x18, White);
 
-		ssd1306_UpdateScreen(&hi2c2);
+  		ssd1306_SetCursor(10, 40);
+  		sprintf(yText, "y: %d", yDisplay);
+  		ssd1306_WriteString(yText, Font_11x18, White);
 
-		turnOfLEDS();
-}
+  		ssd1306_UpdateScreen(&hi2c2);
+
+  		turnOfLEDS();
+  }
   /* USER CODE END 3 */
 }
 
@@ -189,6 +198,7 @@ void SystemClock_Config(void)
   */
   __HAL_RCC_PWR_CLK_ENABLE();
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
@@ -200,11 +210,12 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLM = 8;
   RCC_OscInitStruct.PLL.PLLN = 100;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-  RCC_OscInitStruct.PLL.PLLQ = 4;
+  RCC_OscInitStruct.PLL.PLLQ = 8;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
   }
+
   /** Initializes the CPU, AHB and APB buses clocks
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
@@ -212,7 +223,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK)
   {
@@ -270,7 +281,7 @@ static void MX_I2C2_Init(void)
 
   /* USER CODE END I2C2_Init 1 */
   hi2c2.Instance = I2C2;
-  hi2c2.Init.ClockSpeed = 400000;
+  hi2c2.Init.ClockSpeed = 100000;
   hi2c2.Init.DutyCycle = I2C_DUTYCYCLE_2;
   hi2c2.Init.OwnAddress1 = 0;
   hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
@@ -311,7 +322,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -387,5 +398,3 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
